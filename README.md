@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 LbCDA — Telecom Network Intelligence (ML)
 
 An ML-first project that predicts **(1) Call Drop risk** and **(2) LTE QoS health** from telecom/network indicators, and converts the predictions into actionable insights.
@@ -120,3 +121,6 @@ streamlit run app.py
 ---
 
 
+=======
+# LbCDA
+>>>>>>> 3216fe91f4e53a7f1e75e1f0ef08b7199b2e2969
