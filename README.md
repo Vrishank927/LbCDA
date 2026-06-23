@@ -1,126 +1,162 @@
-<<<<<<< HEAD
-LbCDA — Telecom Network Intelligence (ML)
+LbCDA — Telecom Network Intelligence using Machine Learning
 
-An ML-first project that predicts **(1) Call Drop risk** and **(2) LTE QoS health** from telecom/network indicators, and converts the predictions into actionable insights.
+Turning Telecom Data into Actionable Intelligence
 
-> The repository also includes a **Streamlit** web UI for interactive inference and visualization.
+Telecom networks generate huge amounts of data every second. Hidden inside that data are signals that can reveal network issues before users experience them.
 
----
+**LbCDA** is a Machine Learning-powered telecom analytics system that focuses on two critical challenges:
 
-## Highlights
+📞 **Will a call drop?**
+📶 **How healthy is the LTE network experience?**
 
-- **Call Drop Prediction**: estimates the probability of call drops and maps it to a normalized risk score + category.
-- **LTE QoS Prediction**: predicts QoS class (Good / Moderate / Poor) from RF + mobility + context features.
-- **Feature-aligned inference**: uses stored feature-column order (single-row DataFrame aligned to training schema).
-- **Recommendation Engine**: converts predicted outcomes into operator-friendly recommendations.
+Instead of simply generating predictions, the system transforms raw telecom indicators into meaningful insights and recommendations that can help operators understand and improve network performance.
 
 ---
 
-## Models & Artifacts
+## What the Project Does
 
-The app loads pre-trained model artifacts stored in the repo:
+### 1. Call Drop Risk Prediction
 
-### 1) LTE QoS Model
-- **Model**: `Quality of Service/random_forest_best.pkl`
-- **Encoders**:
-  - `Quality of Service/operator_encoder.pkl`
-  - `Quality of Service/state_encoder.pkl`
-  - `Quality of Service/transport_encoder.pkl`
-- **Feature columns**: `Quality of Service/qos_feature_columns.pkl`
+Dropped calls are one of the most frustrating experiences for mobile users.
 
-**Inference approach**
-- Raw categorical inputs are encoded using the saved LabelEncoders.
-- A single-row feature vector is built and aligned to `qos_feature_columns.pkl`.
-- The model predicts the QoS class, and (if available) `predict_proba` is used to produce confidence distribution.
+Using factors such as:
 
-### 2) Call Drop Model
-- **Model**: `Call Drop/xgboost_best.pkl`
-- **Feature columns**: `Call Drop/call_drop_feature_columns.pkl`
+* Network operator
+* Network type (2G / 3G / 4G)
+* User rating
+* Geographic location
+* Travel environment (Indoor, Outdoor, Travelling)
 
-**Inference approach**
-- A single-row feature vector is created using one-hot flags for categorical context (operator/state/network type/travel type) based on the stored training feature schema.
-- Inference uses `predict_proba` (model must expose probability outputs).
-- Probability is mapped to:
-  - **call-drop percentage**
-  - **risk score** (0–100)
-  - **risk category** (Low / Medium / High / Critical)
+the model predicts the likelihood of a call drop before it happens.
 
----
+The prediction is converted into:
 
-## Feature Engineering (High-Level)
+* Drop probability
+* Risk score (0–100)
+* Risk category
 
-### QoS (Classification)
-- Numeric RF indicators: e.g., **RSRP, RSRQ, SNR, CQI**
-- Mobility/time context: **Hour, DayOfWeek, IsWeekend**
-- Categorical context encoded via stored encoders:
-  - **Operatorname**
-  - **State**
-  - **Transport_Mode**
-- Final input is a **DataFrame aligned to training columns**.
+| Risk Score | Category                        |
+| ---------- | ------------------------------- |
+| Low        | Stable connection               |
+| Medium     | Monitor conditions              |
+| High       | Potential issue detected        |
+| Critical   | Immediate attention recommended |
 
-### Call Drop (Classification/Probabilistic)
-- Inputs include:
-  - User context: **Rating**
-  - Location: **Latitude, Longitude**
-  - Categorical context (one-hot via feature-column presence):
-    - Operator, State
-    - Network type (2G/3G/4G)
-    - Travel type (Indoor/Outdoor/Travelling)
-- Final input is again aligned to the stored **feature-columns order**.
+This allows operators to move from **reactive troubleshooting** to **proactive network management**.
 
 ---
 
-## Post-processing & Decision Logic
+### 2. LTE QoS Prediction
 
-### Call Drop risk mapping
-The system converts drop probability `p_drop` into a severity signal:
-- `p < 0.2`  → **Low Risk**
-- `0.2 ≤ p < 0.5` → **Medium Risk**
-- `0.5 ≤ p < 0.8` → **High Risk**
-- `p ≥ 0.8` → **Critical**
+A network may stay connected but still provide a poor user experience.
 
-### QoS recommendation engine
-Given the predicted QoS class (Good / Moderate / Poor), plus RF signal quality context, the system generates enterprise-friendly recommendations (e.g., parameter tuning, congestion investigation, RF stability actions).
+To evaluate overall LTE quality, the model analyzes radio and mobility indicators such as:
 
----
+* RSRP
+* RSRQ
+* SNR
+* CQI
+* Time and mobility context
+* Operator and regional information
 
-## Reproducibility Notes
+The system then predicts the overall **Quality of Service (QoS)** level:
 
-- Inference expects the repo’s stored artifacts (models, encoders, feature-column pickles).
-- The inference code uses **best-effort encoding** (LabelEncoder transform with a fallback for unseen categories).
-- Feature vectors are created as **single-row DataFrames** and aligned to training schema to prevent column-order mismatches.
+🟢 Good
+🟡 Moderate
+🔴 Poor
 
----
-
-## Streamlit (UI) — brief
-
-The ML inference is exposed through a **Streamlit** app (`streamlit_app/`). The UI provides:
-- interactive inputs for QoS and Call Drop
-- live prediction results with confidence visualization
-- an “enterprise dashboard” landing page
+This helps identify areas where users may experience degraded performance even when connectivity exists.
 
 ---
 
-## Project Layout (relevant ML code)
+## Machine Learning Approach
 
-- `streamlit_app/pages/qos.py` — QoS input schema + QoS inference + recommendations
-- `streamlit_app/pages/call_drop.py` — Call Drop input schema + Call Drop inference + risk mapping
-- `streamlit_app/utils/model_loader.py` — cached loading of pickled artifacts
-- `streamlit_app/utils/prediction.py` — probability → risk/category logic
+The project follows a complete ML pipeline:
+
+### Data Preparation
+
+* Cleaning and preprocessing telecom measurements
+* Handling categorical and numerical features
+* Encoding network and regional information
+* Feature alignment to ensure consistent inference
+
+### Model Training
+
+Different machine learning models were explored and evaluated to identify the best-performing solutions.
+
+The final deployment uses:
+
+* **Random Forest** for LTE QoS prediction
+* **XGBoost** for Call Drop prediction
+
+These models were selected based on their ability to capture complex relationships within telecom network data while maintaining strong predictive performance.
+
+### Inference Pipeline
+
+For every prediction:
+
+1. User inputs are transformed into model-ready features.
+2. Features are aligned with the training schema.
+3. The trained model generates predictions.
+4. Results are translated into human-friendly insights.
+
+The goal is not just prediction accuracy, but **decision support**.
 
 ---
 
-## Run (quick)
+## Intelligent Recommendation Engine
 
-```bash
-cd streamlit_app
-pip install -r requirements.txt
-streamlit run app.py
-```
+Predictions become far more useful when they lead to actions.
+
+Based on the predicted QoS level and network conditions, the system generates recommendations such as:
+
+* Investigating congestion hotspots
+* Optimizing radio parameters
+* Monitoring signal stability
+* Reviewing mobility performance
+* Prioritizing network maintenance efforts
+
+This bridges the gap between **Machine Learning outputs** and **real-world telecom operations**.
 
 ---
 
+## Interactive Dashboard
 
-=======
-# LbCDA
->>>>>>> 3216fe91f4e53a7f1e75e1f0ef08b7199b2e2969
+The project includes a Streamlit-based dashboard that allows users to:
+
+* Enter network parameters
+* Run live ML predictions
+* Visualize confidence scores
+* Explore risk levels and QoS categories
+* Receive automated recommendations
+
+This makes the models accessible to both technical and non-technical users.
+
+---
+
+## Why This Project Matters
+
+Modern telecom networks are becoming increasingly complex.
+
+By combining Machine Learning with telecom domain knowledge, LbCDA helps answer two important questions:
+
+**"How likely is a call to fail?"**
+and
+
+**"How good is the user's network experience?"**
+
+The result is a system that transforms raw network measurements into practical intelligence that can support smarter network monitoring, planning, and optimization.
+
+---
+
+### Built With
+
+* Python
+* Machine Learning
+* XGBoost
+* Random Forest
+* Streamlit
+* Scikit-learn
+
+**Predict. Understand. Optimize.**
+
